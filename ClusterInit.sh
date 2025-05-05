@@ -3,7 +3,12 @@
 # Nutanix initial standup script
 # No API until Prism Central installed, so we're doing this the old fashioned way!
 
-CVM_IP="172.25.1.11"
+CVM_IP1="172.25.1.11"
+CVM_IP2="172.25.1.21"
+CVM_IP3="172.25.1.31"
+CVM_NAME1="NTNX-XNTNX1-CVM"
+CVM_NAME2="NTNX-XNTNX2-CVM"
+CVM_NAME3="NTNX-XNTNX3-CVM"
 CVM_USER="nutanix"
 CVM_PASSWORD="nutanix/4u"
 CLUSTER_NAME="xntnx"
@@ -11,14 +16,12 @@ CLUSTER_IP="172.25.1.100"
 DATA_IP="172.25.1.101"
 DNS_SERVERS="172.18.11.250"
 NTP_SERVERS="time.xrs444.net"
-CVM_NODES="172.25.1.11,172.25.1.21,172.25.1.31"
 NETWORK_NAME="VMs"
 POOL_START="172.25.2.1" 
 POOL_END="172.25.2.200"
 VLAN="2002"
 DOMAINS="l.xrs444.net,x.xrs444.net"
 VLAN_SUBNET="172.25.2.250/24"
-VLAN_COMMENT="General VM Network"
 UPLINKS="10g"
 
 # Check if sshpass is installed
@@ -28,7 +31,7 @@ if ! command -v sshpass &> /dev/null; then
 fi
 
 echo "===== Nutanix Cluster Configuration Script ====="
-echo "Connecting to CVM at $CVM_IP"
+echo "Connecting to CVM at $CVM_IP1"
 
 # Create a temporary file to store the commands
 SSH_COMMANDS=$(mktemp)
@@ -52,7 +55,7 @@ fi
 
 # Create/configure cluster
 echo "Creating/configuring cluster '$CLUSTER_NAME'"
-cluster -s $CVM_NODES --cluster_name=$CLUSTER_NAME --redundancy_factor=2 create
+cluster -s $CVM_IP1,$CVM_IP2,$CVM_IP3 --cluster_name=$CLUSTER_NAME --redundancy_factor=2 create
 
 # Configure cluster DNS
 echo "Configuring cluster DNS"
@@ -72,9 +75,13 @@ ncli cluster edit-params external-data-services-ip-addresses=$DATA_IP
 
 # Configure intial VM Subnet/VLAN
 echo "Creating $NETWORK_NAME"
-acli net.create $NETWORK_NAME vlan=$VLAN ip_config=$VLAN_SUBNET annotation=$VLAN_COMMENT
+acli net.create $NETWORK_NAME vlan=$VLAN ip_config=$VLAN_SUBNET
 acli net.add_dhcp_pool $NETWORK_NAME start=$POOL_START end=$POOL_END
 acli net.update_dhcp_dns $NETWORK_NAME servers=$DNS_SERVERS domains=$DOMAINS
+
+change_cvm_display_name --cvm_ip=$CVM_IP1 --cvm_name=$CVM_NAME1
+change_cvm_display_name --cvm_ip=$CVM_IP2 --cvm_name=$CVM_NAME2
+change_cvm_display_name --cvm_ip=$CVM_IP3 --cvm_name=$CVM_NAME3
 
 # Configure LACP
 echo "Configuring LACP, using quick mode so expect the connection to drop."
@@ -83,7 +90,7 @@ acli net.update_virtual_switch vs0 bond_type=kBalanceTcp lacp_fallback=true lacp
 EOF
 
 # Execute command block
-sshpass -p "$CVM_PASSWORD" ssh -o StrictHostKeyChecking=no "$CVM_USER@$CVM_IP" < "$SSH_COMMANDS"
+sshpass -p "$CVM_PASSWORD" ssh -o StrictHostKeyChecking=no "$CVM_USER@$CVM_IP1" < "$SSH_COMMANDS"
 SSH_RESULT=$?
 
 if [ $SSH_RESULT -ne 0 ]; then
