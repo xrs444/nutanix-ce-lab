@@ -4,9 +4,9 @@
 # No API until Prism Central installed, so we're doing this the old fashioned way!
 
 CVM_IP="172.25.1.11"
-CVM_USER="admin"
+CVM_USER="nutanix"
 CVM_PASSWORD="nutanix/4u"
-CLUSTER_NAME="xntnx1"
+CLUSTER_NAME="xntnx"
 CLUSTER_IP="172.25.1.100"
 DATA_IP="172.25.1.101"
 DNS_SERVERS="172.18.11.250"
